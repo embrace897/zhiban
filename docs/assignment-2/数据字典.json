@@ -1,0 +1,526 @@
+{
+  "users": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "内部用户标识"
+    ],
+    [
+      "wx_subject",
+      "TEXT NOT NULL UNIQUE",
+      "平台身份映射，禁止客户端指定"
+    ],
+    [
+      "role",
+      "TEXT NOT NULL CHECK(role IN ('student','maintainer','admin'))",
+      "角色"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'active'",
+      "账号状态"
+    ]
+  ],
+  "files": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "storage_key",
+      "TEXT NOT NULL UNIQUE",
+      "存储定位，不是公开链接"
+    ],
+    [
+      "sha256",
+      "TEXT NOT NULL",
+      "内容摘要"
+    ],
+    [
+      "mime",
+      "TEXT NOT NULL",
+      "核验的格式"
+    ],
+    [
+      "size_bytes",
+      "INTEGER NOT NULL CHECK(size_bytes>=0)",
+      "文件大小"
+    ]
+  ],
+  "notices": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "file_id",
+      "TEXT REFERENCES files(id)",
+      "附件可空，文本通知无附件"
+    ],
+    [
+      "source",
+      "TEXT NOT NULL",
+      "来源描述"
+    ],
+    [
+      "published_at",
+      "TEXT",
+      "发布时间，可空"
+    ],
+    [
+      "raw_text",
+      "TEXT",
+      "原文"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'pending'",
+      "解析状态"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL DEFAULT 1",
+      "版本"
+    ]
+  ],
+  "drafts": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "草稿标识"
+    ],
+    [
+      "notice_id",
+      "TEXT NOT NULL REFERENCES notices(id)",
+      "所属通知"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL",
+      "草稿版本"
+    ],
+    [
+      "fields_json",
+      "TEXT NOT NULL",
+      "字段值及明确/推导/缺项状态"
+    ],
+    [
+      "evidence_json",
+      "TEXT NOT NULL",
+      "原文片段/页码/可选区域"
+    ]
+  ],
+  "affairs": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "title",
+      "TEXT NOT NULL",
+      "事务标题"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'preparing'",
+      "事务状态"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL DEFAULT 1",
+      "版本"
+    ]
+  ],
+  "affair_notices": [
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "事务"
+    ],
+    [
+      "notice_id",
+      "TEXT NOT NULL REFERENCES notices(id)",
+      "通知"
+    ]
+  ],
+  "events": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "所属事务"
+    ],
+    [
+      "title",
+      "TEXT NOT NULL",
+      "标题"
+    ],
+    [
+      "kind",
+      "TEXT NOT NULL CHECK(kind IN ('activity','deadline','step'))",
+      "类型"
+    ],
+    [
+      "due_at",
+      "TEXT",
+      "UTC时间，可空"
+    ],
+    [
+      "date_value",
+      "TEXT",
+      "日期型值，可空"
+    ],
+    [
+      "precision",
+      "TEXT NOT NULL CHECK(precision IN ('date','minute','unknown'))",
+      "时间精度"
+    ],
+    [
+      "timezone",
+      "TEXT NOT NULL DEFAULT 'Asia/Shanghai'",
+      "展示时区"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'todo'",
+      "事项状态"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL DEFAULT 1",
+      "并发版本"
+    ]
+  ],
+  "checklist_items": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "条目标识"
+    ],
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "事务"
+    ],
+    [
+      "title",
+      "TEXT NOT NULL",
+      "材料或准备步骤"
+    ],
+    [
+      "done",
+      "INTEGER NOT NULL DEFAULT 0 CHECK(done IN (0,1))",
+      "完成状态"
+    ]
+  ],
+  "plans": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "事务"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL",
+      "计划版本"
+    ],
+    [
+      "operations_json",
+      "TEXT NOT NULL",
+      "动作和目标版本快照"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'draft'",
+      "计划状态"
+    ]
+  ],
+  "confirmations": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "确认标识"
+    ],
+    [
+      "plan_id",
+      "TEXT NOT NULL REFERENCES plans(id)",
+      "确认计划"
+    ],
+    [
+      "plan_revision",
+      "INTEGER NOT NULL",
+      "确认版本"
+    ],
+    [
+      "actor_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "确认人"
+    ],
+    [
+      "digest",
+      "TEXT NOT NULL",
+      "操作摘要"
+    ],
+    [
+      "consumed",
+      "INTEGER NOT NULL DEFAULT 0 CHECK(consumed IN (0,1))",
+      "是否消费"
+    ]
+  ],
+  "executions": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "执行标识"
+    ],
+    [
+      "plan_id",
+      "TEXT NOT NULL REFERENCES plans(id)",
+      "所属计划"
+    ],
+    [
+      "step_key",
+      "TEXT NOT NULL UNIQUE",
+      "稳定步骤幂等键"
+    ],
+    [
+      "tool",
+      "TEXT NOT NULL",
+      "工具标识"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'queued'",
+      "执行状态"
+    ],
+    [
+      "result_json",
+      "TEXT",
+      "结果或错误摘要"
+    ],
+    [
+      "lease_until",
+      "TEXT",
+      "执行租约到期"
+    ]
+  ],
+  "reminders": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "提醒标识"
+    ],
+    [
+      "event_id",
+      "TEXT NOT NULL REFERENCES events(id)",
+      "对应事项"
+    ],
+    [
+      "fire_at",
+      "TEXT NOT NULL",
+      "UTC触发时间"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'pending'",
+      "待触发/已产生/取消"
+    ],
+    [
+      "read_at",
+      "TEXT",
+      "用户阅读时间"
+    ]
+  ],
+  "knowledge_documents": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "资料标识"
+    ],
+    [
+      "file_id",
+      "TEXT NOT NULL REFERENCES files(id)",
+      "原始资料"
+    ],
+    [
+      "institution",
+      "TEXT NOT NULL",
+      "机构范围"
+    ],
+    [
+      "version",
+      "TEXT NOT NULL",
+      "文档版本"
+    ],
+    [
+      "source_url",
+      "TEXT",
+      "来源"
+    ],
+    [
+      "valid_until",
+      "TEXT",
+      "有效期"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'draft'",
+      "待审/发布/停用"
+    ]
+  ],
+  "knowledge_chunks": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "分段标识"
+    ],
+    [
+      "document_id",
+      "TEXT NOT NULL REFERENCES knowledge_documents(id)",
+      "来源文档"
+    ],
+    [
+      "ordinal",
+      "INTEGER NOT NULL",
+      "段序"
+    ],
+    [
+      "content",
+      "TEXT NOT NULL",
+      "分段文本"
+    ],
+    [
+      "locator",
+      "TEXT NOT NULL",
+      "页码或段落定位"
+    ]
+  ],
+  "memory_items": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "content",
+      "TEXT NOT NULL",
+      "用户确认的长期信息"
+    ],
+    [
+      "source_ref",
+      "TEXT NOT NULL",
+      "来源会话或人工输入"
+    ],
+    [
+      "revision",
+      "INTEGER NOT NULL DEFAULT 1",
+      "版本"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'proposed'",
+      "提议/有效/停用/删除"
+    ]
+  ],
+  "changes": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "变更标识"
+    ],
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "事务"
+    ],
+    [
+      "notice_id",
+      "TEXT NOT NULL REFERENCES notices(id)",
+      "补充通知"
+    ],
+    [
+      "diff_json",
+      "TEXT NOT NULL",
+      "字段差异与影响对象"
+    ],
+    [
+      "plan_id",
+      "TEXT REFERENCES plans(id)",
+      "调整计划"
+    ]
+  ],
+  "audit_logs": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "审计标识"
+    ],
+    [
+      "actor_id",
+      "TEXT REFERENCES users(id)",
+      "操作身份"
+    ],
+    [
+      "action",
+      "TEXT NOT NULL",
+      "动作"
+    ],
+    [
+      "target_ref",
+      "TEXT NOT NULL",
+      "对象引用"
+    ],
+    [
+      "request_id",
+      "TEXT NOT NULL",
+      "关联请求"
+    ],
+    [
+      "summary",
+      "TEXT",
+      "不含完整私人正文的摘要"
+    ]
+  ]
+}
