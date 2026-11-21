@@ -1,10 +1,10 @@
 ﻿# Milk Dragon_数据库设计说明书
 
-版本3.0 / 2026-11-21 / 设计稿
+版本3.1 / 2026-11-21 / 设计稿
 
 ## Milk Dragon 数据库设计说明书
 
-版本3.0 / 2026年11月21日 / 设计评审稿
+版本3.1 / 2026年11月21日 / 设计评审稿
 
 目录：1引言；2设计决策；3概念ER；4关系与映射；5数据字典；6事务完整性；7索引容量；8安全恢复；9追踪验证。
 
@@ -12,7 +12,7 @@
 
 ## 1 引言、参考与术语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。需求基线为知办V2.0报告；本设计为V3.0候选稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.1候选稿。
 
 UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。
 
@@ -55,6 +55,8 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 | MemoryItems | memory_items | 字段直接映射；JSON经校验序列化 |
 | Changes | changes | 字段直接映射；JSON经校验序列化 |
 | AuditLogs | audit_logs | 字段直接映射；JSON经校验序列化 |
+| EventSources | event_sources | 字段直接映射；JSON经校验序列化 |
+| Artifacts | artifacts | 字段直接映射；JSON经校验序列化 |
 
 每张表PK唯一，affair_notices使用联合PK。应用层Repository负责显式查询映射，不要求额外引入重型ORM。关系与数据字典是映射规范，尚非已实现模型代码。
 
@@ -163,9 +165,11 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 | timezone | TEXT NOT NULL DEFAULT 'Asia/Shanghai' | 展示时区 |
 | status | TEXT NOT NULL DEFAULT 'todo' | 事项状态 |
 | revision | INTEGER NOT NULL DEFAULT 1 | 并发版本 |
+| start_at | TEXT | 活动开始UTC时间 |
+| end_at | TEXT | 活动结束UTC时间，可空但不能擅自推断时长 |
 | created_at | TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
-附加约束：CHECK((precision='date' AND date_value IS NOT NULL AND due_at IS NULL) OR (precision='minute' AND due_at IS NOT NULL AND date_value IS NULL) OR (precision='unknown' AND due_at IS NULL AND date_value IS NULL))
+附加约束：CHECK((precision='date' AND date_value IS NOT NULL AND due_at IS NULL) OR (precision='minute' AND due_at IS NOT NULL AND date_value IS NULL) OR (precision='unknown' AND due_at IS NULL AND date_value IS NULL)); CHECK(end_at IS NULL OR (start_at IS NOT NULL AND end_at>start_at)); CHECK(kind='activity' OR (start_at IS NULL AND end_at IS NULL))
 
 逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
 
@@ -258,6 +262,10 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 | source_url | TEXT | 来源 |
 | valid_until | TEXT | 有效期 |
 | status | TEXT NOT NULL DEFAULT 'draft' | 待审/发布/停用 |
+| department | TEXT | 部门范围，可空代表机构级 |
+| audience | TEXT NOT NULL DEFAULT 'all' | 适用人群 |
+| valid_from | TEXT | 生效时间 |
+| index_status | TEXT NOT NULL DEFAULT 'pending' | 索引就绪状态 |
 | created_at | TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
@@ -326,6 +334,38 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
 
+## 5 数据字典 / event_sources
+
+| 字段 | 类型与约束 | 含义 |
+|---|---|---|
+| event_id | TEXT NOT NULL REFERENCES events(id) | 正式事项 |
+| draft_id | TEXT NOT NULL REFERENCES drafts(id) | 保留原始解析版本 |
+| field_name | TEXT NOT NULL | 来源字段 |
+| evidence_json | TEXT NOT NULL | 原文片段和定位 |
+| confirmed_value | TEXT NOT NULL | 人工确认后的字段值 |
+| created_at | TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+附加约束：PRIMARY KEY(event_id,draft_id,field_name)
+
+逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+
+## 5 数据字典 / artifacts
+
+| 字段 | 类型与约束 | 含义 |
+|---|---|---|
+| id | TEXT PRIMARY KEY | 实体标识 |
+| owner_id | TEXT NOT NULL REFERENCES users(id) | 所属用户 |
+| affair_id | TEXT NOT NULL REFERENCES affairs(id) | 所属事务 |
+| execution_id | TEXT NOT NULL REFERENCES executions(id) | 生成步骤 |
+| file_id | TEXT NOT NULL REFERENCES files(id) | 真实产物 |
+| kind | TEXT NOT NULL | 提纲/材料草稿 |
+| status | TEXT NOT NULL DEFAULT 'ready' | 产物状态 |
+| created_at | TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+附加约束：UNIQUE(execution_id,file_id)
+
+逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+
 ## 6 事务、完整性与并发
 
 创建事务：核对草稿版本→验证所属→写入事务/关联/事项/清单→写审计→提交，失败整体回滚。
@@ -363,3 +403,21 @@ ix_events_due用于用户未完成期限查询；ix_reminders_due用于提醒扫
 对应需求：FR01权限；FR02-06通知与事务；FR08资料；FR10执行；FR11提醒；FR13记忆；FR14变更；FR16恢复；FR19删除。
 
 评审未决：真实模型与数据库访问库版本、检索实现、资料发布权限、最终保留期及容量。
+
+## 10 证据链、产物及完整关系
+
+![08-扩展ER图](assets/08-扩展ER图.png)
+
+完整关系：users 1:N files/notices/affairs/events/plans/memory_items；affairs N:M notices经affair_notices；notices 1:N drafts；affairs 1:N events/checklist_items/plans/changes/artifacts；events 1:N reminders/event_sources；drafts 1:N event_sources；plans 1:N confirmations/executions；executions 1:N artifacts；files 1:N artifacts/knowledge_documents；knowledge_documents 1:N knowledge_chunks。
+
+相同执行产物重复回调由唯一(execution_id,file_id)拒绝；正式字段保存人工确认值与原文出处。时间约束在表级保证结束晚于开始；无结束时间不补默认时长。
+
+## 11 与公开需求的差异及集成边界
+
+第一次作业公开基线：https://www.cnblogs.com/embrace897/p/23594772。原设计19表扩为19表，新增event_sources与artifacts；不是新增两项用户业务，而是补齐FR04原文核对与FR12真实产物落库。
+
+资料元数据增加department、audience、valid_from、index_status以落实FR08适用范围及有效期。索引落后或资料停用时先排除检索，后台可重建。
+
+身份与MiniClaw工作区建立内部映射，会话/消息复用现有持久化并加事务关联适配；本文19表是校园业务目标模型，不代表可以直接导入底座覆盖旧表。整合迁移必须用独立命名空间或适配仓储，先检查现有表结构。
+
+JSON字段保存操作快照而不复制实时任务状态；时间比较统一UTC格式；本轮仅验证DDL、唯一约束、时间约束与外键，跨用户授权和模型效果仍待实现。

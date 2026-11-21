@@ -1,20 +1,20 @@
 ﻿# Milk Dragon_系统设计说明书
 
-版本3.0 / 2026-11-21 / 设计稿
+版本3.1 / 2026-11-21 / 设计稿
 
 ## Milk Dragon 系统设计说明书
 
-文档标识 ZB-SSDD-3.0 / 2026年11月21日 / 设计评审稿
+文档标识 ZB-SSDD-3.1 / 2026年11月21日 / 设计评审稿
 
 团队：林炳辉（产品文档）、黄国轩（智能体）、吴俊达（前端）、谢嘉鸿（后端）、张志远（测试）。
 
-当前为设计成果，不宣称原型在线发布、系统实现、成员提交或测试已经完成。正式交付还需墨刀链接与真实协作证据。
+第一次作业博客已发布，记载30人初步调研与原定分工；原始访谈记录仍待补档。本轮为设计成果，不宣称原型在线发布、系统实现、成员提交或业务测试已经完成。正式交付还需墨刀链接与真实协作证据。
 
 目录：1引言与术语；2设计基线；3架构；4用例；5流程；6类结构；7关键时序；8协作；9接口；10原型规则；11运行安全；12追踪与验证。
 
 ## 1 引言、参考与缩略语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。需求基线为知办V2.0报告；本设计为V3.0候选稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.1候选稿。
 
 UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。
 
@@ -126,3 +126,32 @@ revision用于并发校验，业务对象的ownerId由服务端身份确定。�
 设计评审检查：六类图是否互相一致、计划状态是否闭合、数据库约束是否可执行、原型能否走通杀手级流程。
 
 待确认：墨刀编辑及预览链接、实际提交截止、团队成员GitHub账号、真实协作记录、MiniClaw运行验证、部署主体与模型预算。
+
+## 13 与首次博客的需求承接与设计补全
+
+基线：第一次团队作业博客https://www.cnblogs.com/embrace897/p/23594772；用户原链接少末位数字，本轮以实际读取页面为依据。
+
+已公开事实：Milk Dragon五名成员及角色不变；博客记载询问30人并归纳提醒、通知整理、竞赛规划、复习辅助四类需求。该人数作为团队自述，不扩写满意度、问卷比例或已验证效果。
+
+首批仍为竞赛报名、课程材料提交。复习辅助仅作为同一事务咨询能力的后续适配，不新增独立考试题库模块。保留FR20订阅提醒与日历导出为P2，不提前承诺微信主动推送。
+
+正式事项通过event_sources保存原草稿、字段依据及用户确认值；生成材料通过artifacts关联事务、执行与真实文件。活动保留start_at/end_at，未知结束时间不判定确定冲突。
+
+日程冲突：已知区间[a,b)与[c,d)满足a<d且c<b时冲突；缺少终点只能提示待确认。截止节点不等同占时活动。
+
+查询路径：原通知及当前事务→实时日程→按机构/部门/人群/有效期筛选已发布且索引就绪资料→确认记忆。引用返回documentId、版本、片段与定位；信息不足则追问。
+
+记忆、会话和Skill复用MiniClaw时通过适配层关联当前事务与用户范围；尚未验证适配，不能把“记忆全文搜索”写成已完成文档RAG。
+
+## 14 原型、权限与验收矩阵
+
+| 需求基线 | 原型/服务/存储 | 验收重点 |
+|---|---|---|
+| FR02—04 | S02/S03 / NoticeService / drafts,event_sources | 模糊截图、缺年、确认值与原文可回溯 |
+| FR05—06 | S04 / AffairService / events,checklist_items | 活动起止、日期精度与冲突 |
+| FR07—09 | S05/S06 / Agent、KnowledgeService | 机构有效期过滤、引用及个人约束 |
+| FR10、16 | S06/S07 / PlanService / confirmations,executions | 拒绝不执行、旧版409、幂等、恢复 |
+| FR12—15 | S07—09 / artifacts,memory_items,changes | 产物可访问、偏好删除、变更影响 |
+| FR17—19 | A02—05 / knowledge_documents,audit_logs | 停用即时排除、越权拒绝、删除影响 |
+
+本次不要求现场答辩。交付门槛为设计文档及墨刀真实分享链接；协作过程与本人GitHub贡献必须补真实记录，第一次作业合照不当作本次新协作证据。

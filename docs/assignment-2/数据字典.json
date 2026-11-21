@@ -216,6 +216,16 @@
       "revision",
       "INTEGER NOT NULL DEFAULT 1",
       "并发版本"
+    ],
+    [
+      "start_at",
+      "TEXT",
+      "活动开始UTC时间"
+    ],
+    [
+      "end_at",
+      "TEXT",
+      "活动结束UTC时间，可空但不能擅自推断时长"
     ]
   ],
   "checklist_items": [
@@ -403,6 +413,26 @@
       "status",
       "TEXT NOT NULL DEFAULT 'draft'",
       "待审/发布/停用"
+    ],
+    [
+      "department",
+      "TEXT",
+      "部门范围，可空代表机构级"
+    ],
+    [
+      "audience",
+      "TEXT NOT NULL DEFAULT 'all'",
+      "适用人群"
+    ],
+    [
+      "valid_from",
+      "TEXT",
+      "生效时间"
+    ],
+    [
+      "index_status",
+      "TEXT NOT NULL DEFAULT 'pending'",
+      "索引就绪状态"
     ]
   ],
   "knowledge_chunks": [
@@ -521,6 +551,70 @@
       "summary",
       "TEXT",
       "不含完整私人正文的摘要"
+    ]
+  ],
+  "event_sources": [
+    [
+      "event_id",
+      "TEXT NOT NULL REFERENCES events(id)",
+      "正式事项"
+    ],
+    [
+      "draft_id",
+      "TEXT NOT NULL REFERENCES drafts(id)",
+      "保留原始解析版本"
+    ],
+    [
+      "field_name",
+      "TEXT NOT NULL",
+      "来源字段"
+    ],
+    [
+      "evidence_json",
+      "TEXT NOT NULL",
+      "原文片段和定位"
+    ],
+    [
+      "confirmed_value",
+      "TEXT NOT NULL",
+      "人工确认后的字段值"
+    ]
+  ],
+  "artifacts": [
+    [
+      "id",
+      "TEXT PRIMARY KEY",
+      "实体标识"
+    ],
+    [
+      "owner_id",
+      "TEXT NOT NULL REFERENCES users(id)",
+      "所属用户"
+    ],
+    [
+      "affair_id",
+      "TEXT NOT NULL REFERENCES affairs(id)",
+      "所属事务"
+    ],
+    [
+      "execution_id",
+      "TEXT NOT NULL REFERENCES executions(id)",
+      "生成步骤"
+    ],
+    [
+      "file_id",
+      "TEXT NOT NULL REFERENCES files(id)",
+      "真实产物"
+    ],
+    [
+      "kind",
+      "TEXT NOT NULL",
+      "提纲/材料草稿"
+    ],
+    [
+      "status",
+      "TEXT NOT NULL DEFAULT 'ready'",
+      "产物状态"
     ]
   ]
 }

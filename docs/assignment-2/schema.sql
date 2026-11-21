@@ -62,8 +62,12 @@ CREATE TABLE events(
  timezone TEXT NOT NULL DEFAULT 'Asia/Shanghai',
  status TEXT NOT NULL DEFAULT 'todo',
  revision INTEGER NOT NULL DEFAULT 1,
+ start_at TEXT,
+ end_at TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
- CHECK((precision='date' AND date_value IS NOT NULL AND due_at IS NULL) OR (precision='minute' AND due_at IS NOT NULL AND date_value IS NULL) OR (precision='unknown' AND due_at IS NULL AND date_value IS NULL))
+ CHECK((precision='date' AND date_value IS NOT NULL AND due_at IS NULL) OR (precision='minute' AND due_at IS NOT NULL AND date_value IS NULL) OR (precision='unknown' AND due_at IS NULL AND date_value IS NULL)),
+ CHECK(end_at IS NULL OR (start_at IS NOT NULL AND end_at>start_at)),
+ CHECK(kind='activity' OR (start_at IS NULL AND end_at IS NULL))
 );
 CREATE TABLE checklist_items(
  id TEXT PRIMARY KEY,
@@ -117,6 +121,10 @@ CREATE TABLE knowledge_documents(
  source_url TEXT,
  valid_until TEXT,
  status TEXT NOT NULL DEFAULT 'draft',
+ department TEXT,
+ audience TEXT NOT NULL DEFAULT 'all',
+ valid_from TEXT,
+ index_status TEXT NOT NULL DEFAULT 'pending',
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE knowledge_chunks(
@@ -153,6 +161,26 @@ CREATE TABLE audit_logs(
  request_id TEXT NOT NULL,
  summary TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE event_sources(
+ event_id TEXT NOT NULL REFERENCES events(id),
+ draft_id TEXT NOT NULL REFERENCES drafts(id),
+ field_name TEXT NOT NULL,
+ evidence_json TEXT NOT NULL,
+ confirmed_value TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(event_id,draft_id,field_name)
+);
+CREATE TABLE artifacts(
+ id TEXT PRIMARY KEY,
+ owner_id TEXT NOT NULL REFERENCES users(id),
+ affair_id TEXT NOT NULL REFERENCES affairs(id),
+ execution_id TEXT NOT NULL REFERENCES executions(id),
+ file_id TEXT NOT NULL REFERENCES files(id),
+ kind TEXT NOT NULL,
+ status TEXT NOT NULL DEFAULT 'ready',
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(execution_id,file_id)
 );
 CREATE INDEX ix_events_due ON events(owner_id,status,due_at);
 CREATE INDEX ix_reminders_due ON reminders(status,fire_at);
