@@ -1,10 +1,10 @@
 ﻿# Milk Dragon_数据库设计说明书
 
-版本3.1 / 2026-11-21 / 设计稿
+版本3.2 / 2026-11-22 / 设计稿
 
 ## Milk Dragon 数据库设计说明书
 
-版本3.1 / 2026年11月21日 / 设计评审稿
+版本3.2 / 2026年11月22日 / 设计评审稿
 
 目录：1引言；2设计决策；3概念ER；4关系与映射；5数据字典；6事务完整性；7索引容量；8安全恢复；9追踪验证。
 
@@ -12,7 +12,7 @@
 
 ## 1 引言、参考与术语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.1候选稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-22核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.2候选稿。
 
 UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。
 
@@ -414,7 +414,7 @@ ix_events_due用于用户未完成期限查询；ix_reminders_due用于提醒扫
 
 ## 11 与公开需求的差异及集成边界
 
-第一次作业公开基线：https://www.cnblogs.com/embrace897/p/23594772。原设计19表扩为19表，新增event_sources与artifacts；不是新增两项用户业务，而是补齐FR04原文核对与FR12真实产物落库。
+第一次作业公开基线：https://www.cnblogs.com/embrace897/p/23594772。目标模型共19表，event_sources与artifacts用于补齐FR04原文核对与FR12真实产物落库，不增加独立用户业务。
 
 资料元数据增加department、audience、valid_from、index_status以落实FR08适用范围及有效期。索引落后或资料停用时先排除检索，后台可重建。
 
