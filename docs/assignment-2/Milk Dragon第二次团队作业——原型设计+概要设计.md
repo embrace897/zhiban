@@ -26,7 +26,7 @@ UML为统一建模语言；ER为实体关系；API为应用程序接口；RAG为
 
 ### 3.1 工具、页面与交互
 
-选用墨刀，前台10页与后台5页，390×844画布；统一颜色、字号、卡片和状态组件。详细页面、文案与点击规则见[墨刀原型设计蓝本](墨刀原型设计蓝本.md)。该蓝本尚不能替代专用工具里的在线原型。
+选用墨刀，前台10页与后台5页，390×844画布；统一颜色、字号、卡片和状态组件。详细页面、文案与点击规则见[墨刀原型设计蓝本](https://github.com/embrace897/zhiban/blob/main/docs/assignment-2/%E5%A2%A8%E5%88%80%E5%8E%9F%E5%9E%8B%E8%AE%BE%E8%AE%A1%E8%93%9D%E6%9C%AC.md)。该蓝本尚不能替代专用工具里的在线原型。
 
 | 前台路径 | 处理结果 |
 |---|---|
@@ -53,51 +53,51 @@ UML为统一建模语言；ER为实体关系；API为应用程序接口；RAG为
 
 ### 4.1 架构与功能模块
 
-![分层架构](assets/01-架构.png)
+![分层架构](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/01-%E6%9E%B6%E6%9E%84.png)
 
 表示层负责交互；接入层确定身份、范围和限额；业务层实现通知、事务和计划；智能层按任务选择Skill、资料与记忆；数据层保存真实状态，任务进程异步解析、生成与提醒。模型调用不占数据库写事务。
 
 ### 4.2 用例图
 
-![用例图](assets/02-用例图.png)
+![用例图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/02-%E7%94%A8%E4%BE%8B%E5%9B%BE.png)
 
 学生完成通知与事务处理，资料维护员负责公共知识发布和停用。普通用户不能通过助手获得管理员工具权限。
 
 ### 4.3 活动图
 
-![活动图](assets/03-活动图.png)
+![活动图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/03-%E6%B4%BB%E5%8A%A8%E5%9B%BE.png)
 
 缺项进入追问或编辑，无缺项也必须经过核对；解析失败保留草稿并允许手工录入。用户确认后才建立正式事项。
 
 ### 4.4 类图
 
-![类图](assets/04-类图.png)
+![类图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/04-%E7%B1%BB%E5%9B%BE.png)
 
 事务与通知通过关联类形成多对多；事务含事项，计划含执行步骤。图为核心结构子集，完整字段与关系见数据库说明书。
 
 ### 4.5 时序图：计划确认与幂等执行
 
-![时序图](assets/05-时序图.png)
+![时序图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/05-%E6%97%B6%E5%BA%8F%E5%9B%BE.png)
 
 确认绑定计划与目标版本，服务端短事务内消费确认并登记稳定步骤。内部写入与执行结果一起提交；外部结果不明转待核实，不能盲重试。原确认失效时重新核对。
 
 ### 4.6 协作图
 
-![协作图](assets/06-协作图.png)
+![协作图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/06-%E5%8D%8F%E4%BD%9C%E5%9B%BE.png)
 
 编号1、1.1、1.2表示调用层次，2表示查询恢复；展示小程序、计划服务、执行器与业务库的消息关系。更细的接口、状态和错误码见系统设计说明书。
 
 ## 五、数据库设计
 
-![ER图](assets/07-ER图.png)
+![ER图](https://raw.githubusercontent.com/embrace897/zhiban/main/docs/assignment-2/assets/07-ER%E5%9B%BE.png)
 
 概念图以1:N标注基数，通知与事务通过中间表连接。完整设计17表：用户、文件、通知、草稿、事务、事务通知关联、事项、清单、计划、确认、执行、提醒、知识文档、知识分段、记忆、变更和审计。
 
 关系模型使用文本主键、外键和唯一约束；确认按计划版本唯一，执行step_key唯一防重复；时间区分日期型、精确型和未知型。公共资料带机构、版本和有效期，私人资料按用户隔离。
 
-ORM映射采用实体与snake_case表字段对应，Repository显式映射；复杂操作和证据按校验后的JSON保存。完整实体映射和数据字典见PDF及[数据字典](数据字典.json)。
+ORM映射采用实体与snake_case表字段对应，Repository显式映射；复杂操作和证据按校验后的JSON保存。完整实体映射和数据字典见PDF及[数据字典](https://github.com/embrace897/zhiban/blob/main/docs/assignment-2/%E6%95%B0%E6%8D%AE%E5%AD%97%E5%85%B8.json)。
 
-[建表脚本](schema.sql)已在内存SQLite中成功执行并通过外键检查，仅证明结构可创建；权限、并发及业务测试仍需实现后验证。跨用户关联由服务事务验证，单列外键不能替代用户隔离。
+[建表脚本](https://github.com/embrace897/zhiban/blob/main/docs/assignment-2/schema.sql)已在内存SQLite中成功执行并通过外键检查，仅证明结构可创建；权限、并发及业务测试仍需实现后验证。跨用户关联由服务事务验证，单列外键不能替代用户隔离。
 
 ## 六、团队计划与协作
 
@@ -139,8 +139,8 @@ ORM映射采用实体与snake_case表字段对应，Repository显式映射；复
 ## 七、文档与展示入口
 
 - [GitHub团队仓库](https://github.com/embrace897/zhiban)
-- [Milk Dragon_系统设计说明书.pdf](Milk%20Dragon_系统设计说明书.pdf)
-- [Milk Dragon_数据库设计说明书.pdf](Milk%20Dragon_数据库设计说明书.pdf)
+- [Milk Dragon_系统设计说明书.pdf](https://github.com/embrace897/zhiban/blob/main/docs/assignment-2/Milk%20Dragon_%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf)
+- [Milk Dragon_数据库设计说明书.pdf](https://github.com/embrace897/zhiban/blob/main/docs/assignment-2/Milk%20Dragon_%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf)
 - 墨刀原型在线预览：**待完成后补充**。
 
-发布博客园前，将图片上传至博客图床，将上述相对文档链接换成仓库对应文件的真实在线链接，并补齐墨刀链接、团队协作和每人贡献证据。无需现场答辩，本次提交重点为完整且一致的设计材料。
+上述文档链接指向团队仓库，图像使用仓库原图；博客园发布时建议将图片转存图床，并检查读者网络下能否加载。仍需补齐墨刀链接、团队协作和每人贡献证据。无需现场答辩，本次提交重点为完整且一致的设计材料。
