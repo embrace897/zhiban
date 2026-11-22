@@ -1,22 +1,22 @@
 ﻿# Milk Dragon_系统设计说明书
 
-版本3.2 / 2026-11-22 / 设计稿
+版本3.3 / 2026-11-22 / 设计复核稿
 
 ## Milk Dragon 系统设计说明书
 
-文档标识 ZB-SSDD-3.2 / 2026年11月22日 / 设计评审稿
+文档标识 ZB-SSDD-3.3 / 2026年11月22日 / 设计复核稿
 
 团队：林炳辉（产品文档）、黄国轩（智能体）、吴俊达（前端）、谢嘉鸿（后端）、张志远（测试）。
 
-第一次作业博客已发布，记载30人初步调研与原定分工；原始访谈记录仍待补档。已在即时设计搭建15页可编辑交互原型并开启公开只读预览，2026年11月22日通过Edge无痕窗口验证。业务系统实现、成员贡献及真实协作证据仍需后续完成。
+本次设计交付包括即时设计17页原型、五类UML图及数据库设计。原型覆盖12页学生端与5页管理端。11月22日复核验证通知变更、确认调整、结果及返回首页的完整演示路径。
 
-目录：1引言与术语；2设计基线；3架构；4用例；5流程；6类结构；7关键时序；8协作；9接口；10原型规则；11运行安全；12追踪与验证。
+目录：1引言与术语；2设计基线；3架构；4用例；5流程；6类结构；7关键时序；8协作；9接口；10原型规则；11运行安全；12追踪与验证。 13需求承接。14原型与验收矩阵。
 
 ## 1 引言、参考与缩略语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-22核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.2候选稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.3复核稿。
 
-UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。
+UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。 FR（Functional Requirement，功能需求），P0/P1/P2（核心、次优先、扩展），ID（Identifier，标识），PDF（Portable Document Format，便携式文档格式），UI（User Interface，用户界面），HTTPS（Hypertext Transfer Protocol Secure，安全超文本传输协议），SQL（Structured Query Language，结构化查询语言），P95（第95百分位）。SSDD为系统及子系统设计说明书的文档标识缩写，DB为Database（数据库）。
 
 设计输入：知办需求V2.0；第二次团队作业16785。本文按架构、模块、对象与接口逐层展开。后台管理按本次作业新增设计，小程序仍是唯一学生产品，不新增学生Web。
 
@@ -66,7 +66,7 @@ revision用于并发校验，业务对象的ownerId由服务端身份确定。�
 
 ![05-时序图](assets/05-时序图.png)
 
-确认记录绑定操作者、计划版本、操作摘要及目标版本。短事务内校验并消费确认，同时登记步骤。
+确认接口保存操作者、计划版本和操作摘要。执行接口再次校验计划与关联目标的版本，在同一短事务内消费确认并登记步骤，后台处理完成后可按步骤标识查询。
 
 执行器按唯一step_key领取任务。内部业务写入与结果记录同一事务；外部生成按稳定请求标识核验，结果不明标记待核实。计划变更或目标过期则返回409，不执行旧方案。
 
@@ -74,7 +74,7 @@ revision用于并发校验，业务对象的ownerId由服务端身份确定。�
 
 ![06-协作图](assets/06-协作图.png)
 
-协作图强调对象网络与消息编号；1、1.1、1.2表示嵌套调用，2为恢复查询。边上的箭头代表消息方向，不代表类继承。
+1表示确认，2表示提交执行，3表示后台领取，4表示查询进度。小程序经计划服务读取状态和产物。
 
 系统对外显示成功、部分成功、失败与待核实。取消仅影响未执行步骤，不把已成功写入当作撤销。
 
@@ -93,15 +93,19 @@ revision用于并发校验，业务对象的ownerId由服务端身份确定。�
 
 错误：400输入不合法，401会话失效，403无权，409版本冲突，413超限，429配额，502/504上游异常。返回requestId，不泄露密钥。
 
+相同执行请求按计划版本与操作计算稳定步骤键。服务先核对所属用户，再查询是否已登记相同步骤。重复请求返回既有步骤标识。首次执行时在短事务内消费确认并登记步骤，确认版本失效返回409。
+
 ## 10 前台与后台原型规则
 
-专用原型工具改用即时设计。学生端10页、授权管理端5页，画板390×844。已连通通知核对与确认执行主线、首页变更入口、个人中心管理入口和资料审核主线。预览：https://js.design/v?i=GHij-B&p=WOFdw0OL2p&f=PujeSk_V9qCFzCgrZPzh6。未登录访问验证通过；重试后的成功状态、表单编辑、文件下载和完整导航仍为后续原型细化项，不代表业务已经实现。
+即时设计含12个学生画板和5个管理画板，尺寸390×844。原型使用示例数据，重点演示通知核对、确认执行、变更影响与资料审核。
 
-前台页面：S01首页，S02上传，S03核对，S04事务，S05助手，S06计划确认，S07执行结果，S08变更对比，S09记忆，S10消息。后台：A01概览，A02资料列表，A03资料审核，A04执行异常，A05审计。
+前台页面：S01首页，S02上传，S03核对，S04事务，S05助手，S06计划确认，S07执行结果，S08变更对比，S09记忆，S10消息。后台：A01概览，A02资料列表，A03资料审核，A04执行异常，A05审计。 学生端补充S11确认调整和S12变更结果。
 
-主链：S01→S02→S03→S04→S05→S06→S07。变更链S04→S08→S06。审核链A02→A03→发布/退回。每页须设计加载、空态、错误、无权与恢复。
+预览主线为S01→S02→S03→S04→S05→S06→S07。通知变更演示为S01→S08→S11→S12→S01。审核路径为A01→A02→A03→A02。五栏图标标识当前栏目。
 
 核对屏按字段展示原文；未知日期阻止对应日程落库。计划卡列出新增/修改目标。异常屏只重试安全步骤。后台发布需来源与有效范围，停用立即排除新检索。
+
+[打开即时设计公开预览](https://js.design/v?i=GHij-B&p=WOFdw0OL2p&f=PujeSk_V9qCFzCgrZPzh6)
 
 ## 11 运行、安全与部署
 
@@ -125,7 +129,7 @@ revision用于并发校验，业务对象的ownerId由服务端身份确定。�
 
 设计评审检查：六类图是否互相一致、计划状态是否闭合、数据库约束是否可执行、原型能否走通杀手级流程。
 
-原型编辑：https://js.design/f/GHij-B?mode=design&p=WOFdw0OL2p；公开预览见第10章。待补：实际提交截止、团队成员GitHub账号、真实协作记录、MiniClaw运行验证、部署主体与模型预算。
+第二次团队作业截止于2026年11月22日23:59（课程平台）。待补本轮团队评审记录及成员贡献链接。开发阶段继续验证MiniClaw运行、部署主体与模型预算。
 
 ## 13 与首次博客的需求承接与设计补全
 

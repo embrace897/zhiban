@@ -1,20 +1,20 @@
 ﻿# Milk Dragon_数据库设计说明书
 
-版本3.2 / 2026-11-22 / 设计稿
+版本3.3 / 2026-11-22 / 设计复核稿
 
 ## Milk Dragon 数据库设计说明书
 
-版本3.2 / 2026年11月22日 / 设计评审稿
+版本3.3 / 2026年11月22日 / 设计复核稿
 
-目录：1引言；2设计决策；3概念ER；4关系与映射；5数据字典；6事务完整性；7索引容量；8安全恢复；9追踪验证。
+目录：1引言。2设计决策。3概念ER。4关系模型与映射。5数据字典。6事务完整性。7索引容量。8安全恢复。9追踪验证。10证据链与产物。11集成边界。
 
 附件schema.sql为可执行设计基线，已在内存SQLite中验证建表，不代表线上数据库已迁移。
 
 ## 1 引言、参考与术语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-22核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.2候选稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.3复核稿。
 
-UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。
+UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。 FR（Functional Requirement，功能需求），P0/P1/P2（核心、次优先、扩展），ID（Identifier，标识），PDF（Portable Document Format，便携式文档格式），UI（User Interface，用户界面），HTTPS（Hypertext Transfer Protocol Secure，安全超文本传输协议），SQL（Structured Query Language，结构化查询语言），P95（第95百分位）。SSDD为系统及子系统设计说明书的文档标识缩写，DB为Database（数据库）。
 
 业务库管理身份、通知、计划、执行、提醒、记忆与公共资料。文件正文在受控存储，表保存定位；检索索引是可重建派生数据。
 
@@ -34,31 +34,72 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 图为核心概念子集，完整实体以DDL及数据字典为准，不能据图省略确认与审计。
 
-## 4 关系数据模型与ORM映射
+## 4.1 关系数据模型：主键与外键
 
-| 实体类 | 关系表 | 关系/映射规则 |
+| 关系表 | 主键 | 外键 → 被引用表 |
 |---|---|---|
-| Users | users | 字段直接映射；JSON经校验序列化 |
-| Files | files | 字段直接映射；JSON经校验序列化 |
-| Notices | notices | 字段直接映射；JSON经校验序列化 |
-| Drafts | drafts | 字段直接映射；JSON经校验序列化 |
-| Affairs | affairs | 字段直接映射；JSON经校验序列化 |
-| AffairNotices | affair_notices | 字段直接映射；JSON经校验序列化 |
-| Events | events | 字段直接映射；JSON经校验序列化 |
-| ChecklistItems | checklist_items | 字段直接映射；JSON经校验序列化 |
-| Plans | plans | 字段直接映射；JSON经校验序列化 |
-| Confirmations | confirmations | 字段直接映射；JSON经校验序列化 |
-| Executions | executions | 字段直接映射；JSON经校验序列化 |
-| Reminders | reminders | 字段直接映射；JSON经校验序列化 |
-| KnowledgeDocuments | knowledge_documents | 字段直接映射；JSON经校验序列化 |
-| KnowledgeChunks | knowledge_chunks | 字段直接映射；JSON经校验序列化 |
-| MemoryItems | memory_items | 字段直接映射；JSON经校验序列化 |
-| Changes | changes | 字段直接映射；JSON经校验序列化 |
-| AuditLogs | audit_logs | 字段直接映射；JSON经校验序列化 |
-| EventSources | event_sources | 字段直接映射；JSON经校验序列化 |
-| Artifacts | artifacts | 字段直接映射；JSON经校验序列化 |
+| users | id | — |
+| files | id | owner_id → users.id |
+| notices | id | file_id → files.id<br>owner_id → users.id |
+| drafts | id | notice_id → notices.id |
+| affairs | id | owner_id → users.id |
+| affair_notices | affair_id, notice_id | notice_id → notices.id<br>affair_id → affairs.id |
+| events | id | affair_id → affairs.id<br>owner_id → users.id |
+| checklist_items | id | affair_id → affairs.id |
+| plans | id | affair_id → affairs.id<br>owner_id → users.id |
+| confirmations | id | actor_id → users.id<br>plan_id → plans.id |
 
-每张表PK唯一，affair_notices使用联合PK。应用层Repository负责显式查询映射，不要求额外引入重型ORM。关系与数据字典是映射规范，尚非已实现模型代码。
+通知与事务通过affair_notices相连。该关联表使用两个外键组成联合主键。
+
+## 4.2 关系数据模型：执行、资料与证据
+
+| 关系表 | 主键 | 外键 → 被引用表 |
+|---|---|---|
+| executions | id | plan_id → plans.id |
+| reminders | id | event_id → events.id |
+| knowledge_documents | id | file_id → files.id |
+| knowledge_chunks | id | document_id → knowledge_documents.id |
+| memory_items | id | owner_id → users.id |
+| changes | id | plan_id → plans.id<br>notice_id → notices.id<br>affair_id → affairs.id |
+| audit_logs | id | actor_id → users.id |
+| event_sources | event_id, draft_id, field_name | draft_id → drafts.id<br>event_id → events.id |
+| artifacts | id | file_id → files.id<br>execution_id → executions.id<br>affair_id → affairs.id<br>owner_id → users.id |
+
+外键列的必填性见数据字典。带唯一约束的版本、幂等键和产物关联见建表脚本。
+
+## 4.3 实体类与关系表映射
+
+| 实体类 | 关系表 | 实体类 | 关系表 |
+|---|---|---|---|
+| User | users | Execution | executions |
+| File | files | Reminder | reminders |
+| Notice | notices | KnowledgeDocument | knowledge_documents |
+| NoticeDraft | drafts | KnowledgeChunk | knowledge_chunks |
+| Affair | affairs | MemoryItem | memory_items |
+| AffairNotice | affair_notices | NoticeChange | changes |
+| Event | events | AuditLog | audit_logs |
+| ChecklistItem | checklist_items | EventSource | event_sources |
+| ActionPlan | plans | Artifact | artifacts |
+| Confirmation | confirmations | — | — |
+
+映射采用显式持久化转换。列的类型、主外键、默认值与可空性以第4.1、4.2节和第5章为准。
+
+## 4.4 关键属性的对象关系映射
+
+| 实体类属性 | 数据库列 | 转换规则 |
+|---|---|---|
+| Affair.ownerId / revision | affairs.owner_id / revision | 身份来自服务端，版本用于冲突检查 |
+| Notice.fileId | notices.file_id | 上传附件时设置，纯文本时允许空值 |
+| Event.dueAt / dateValue | events.due_at / date_value | 按precision控制时间精度，未知时两个字段均空 |
+| AffairNotice.affairId / noticeId | affair_notices.affair_id / notice_id | 联合主键映射为关联对象的复合标识 |
+| ActionPlan.operations | plans.operations_json | 对象数组校验后序列化，读取时解析 |
+| Confirmation.planRevision | confirmations.plan_revision | 与plan_id组成唯一键，同一计划版本仅有一条确认 |
+| Execution.stepKey / result | executions.step_key / result_json | 步骤键唯一，结果由执行器校验后序列化 |
+| EventSource.confirmedValue | event_sources.confirmed_value | 以事项、草稿、字段名为联合标识，保存核对结果 |
+| Artifact.fileId / executionId | artifacts.file_id / execution_id | 关联真实文件和执行步骤，组合唯一 |
+| KnowledgeDocument.indexStatus | knowledge_documents.index_status | 读写资料索引状态，检索仅使用就绪且有效的资料 |
+
+持久化层将对象中的驼峰属性显式映射到数据库下划线列名。每表完整字段及约束见第5章。
 
 ## 5 数据字典 / users
 
@@ -374,7 +415,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 资料发布：核对维护权限与元数据→发布状态→异步建立索引；仅发布且索引就绪资料参与新检索。停用时先禁止检索，索引清理可以异步。
 
-外键RESTRICT为默认删除行为。清除附件前检查引用，删除采用明确顺序；禁止直接级联抹掉审计。日期精度由CHECK约束保证，JSON结构由服务层保证。
+外键沿用SQLite默认的NO ACTION（默认阻止提交未解除引用的删除）。清除附件前先检查引用并按顺序解除关联。日期精度由表约束保证，JSON内容由服务层校验。
 
 ## 7 索引、规模与性能
 
@@ -408,7 +449,7 @@ ix_events_due用于用户未完成期限查询；ix_reminders_due用于提醒扫
 
 ![08-扩展ER图](assets/08-扩展ER图.png)
 
-完整关系：users 1:N files/notices/affairs/events/plans/memory_items；affairs N:M notices经affair_notices；notices 1:N drafts；affairs 1:N events/checklist_items/plans/changes/artifacts；events 1:N reminders/event_sources；drafts 1:N event_sources；plans 1:N confirmations/executions；executions 1:N artifacts；files 1:N artifacts/knowledge_documents；knowledge_documents 1:N knowledge_chunks。
+图中展示事务、计划、确认、执行与产物之间的关系。其余关系见第4.1及4.2节的完整外键表。
 
 相同执行产物重复回调由唯一(execution_id,file_id)拒绝；正式字段保存人工确认值与原文出处。时间约束在表级保证结束晚于开始；无结束时间不补默认时长。
 

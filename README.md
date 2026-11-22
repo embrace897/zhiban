@@ -63,7 +63,7 @@
 
 ## 原型与设计文档
 
-- [即时设计原型预览](https://js.design/v?i=GHij-B&p=WOFdw0OL2p&f=PujeSk_V9qCFzCgrZPzh6)（15页，可公开查看；采用示例数据）
+- [即时设计原型预览](https://js.design/v?i=GHij-B&p=WOFdw0OL2p&f=PujeSk_V9qCFzCgrZPzh6)（17页，可公开查看，采用示例数据）
 - [第二次团队作业博客与设计材料](docs/assignment-2/)
 - [原型设计与验证说明](docs/assignment-2/原型设计与验证说明.md)
 
