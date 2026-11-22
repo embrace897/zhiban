@@ -1,18 +1,20 @@
 ﻿# Milk Dragon_数据库设计说明书
 
-版本3.3 / 2026-11-22 / 设计复核稿
+版本3.4 / 2026-11-22 / 设计详化稿
 
 ## Milk Dragon 数据库设计说明书
 
-版本3.3 / 2026年11月22日 / 设计复核稿
+版本3.4 / 2026年11月22日 / 设计详化稿
 
-目录：1引言。2设计决策。3概念ER。4关系模型与映射。5数据字典。6事务完整性。7索引容量。8安全恢复。9追踪验证。10证据链与产物。11集成边界。
+阅读索引：第1至4章为设计原则、实体关系和映射。第5章逐表解释字段与约束。第6至11章说明事务、索引、备份与集成。第12至18章展开业务写入、状态、查询、生命周期和验收。
 
 附件schema.sql为可执行设计基线，已在内存SQLite中验证建表，不代表线上数据库已迁移。
 
+版本记录：V3.3列出19张表的主外键与对象映射。V3.4在此基础上细化数据约束、事务边界、备份恢复与验证。
+
 ## 1 引言、参考与术语
 
-参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.3复核稿。
+参考：GB/T 8567—2006《计算机软件文档编制规范》。国家标准平台：https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=84C42B6277D2714B7176B10C6E6B1A44 。按系统/子系统设计与数据库顶层设计主题裁剪组织，未声称逐条符合性认证。公开需求基线为第一次作业博客https://www.cnblogs.com/embrace897/p/23594772（2026-11-21核对），沿用FR01—20及原优先级；V2.0报告为辅助材料；本设计为V3.4详化稿。
 
 UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationship，实体关系）；API（Application Programming Interface，应用程序接口）；RAG（Retrieval-Augmented Generation，检索增强生成）；MCP（Model Context Protocol，模型上下文协议）；Skill（场景处理规范）；PK（Primary Key，主键）；FK（Foreign Key，外键）；ORM（Object Relational Mapping，对象关系映射）；DDL（Data Definition Language，数据定义语言）；UTC（Coordinated Universal Time，协调世界时）；WAL（Write-Ahead Logging，预写日志）；CAS（Compare And Set，比较并更新）；JSON（JavaScript Object Notation，数据交换表示）。 FR（Functional Requirement，功能需求），P0/P1/P2（核心、次优先、扩展），ID（Identifier，标识），PDF（Portable Document Format，便携式文档格式），UI（User Interface，用户界面），HTTPS（Hypertext Transfer Protocol Secure，安全超文本传输协议），SQL（Structured Query Language，结构化查询语言），P95（第95百分位）。SSDD为系统及子系统设计说明书的文档标识缩写，DB为Database（数据库）。
 
@@ -113,7 +115,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+wx_subject用于平台身份映射，角色及启停状态由服务端管理。个人业务读写以内部用户标识为准。
 
 ## 5 数据字典 / files
 
@@ -129,7 +131,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+文件正文由storage_key定位，sha256保存内容校验值。即使内容相同，也要分别核对授权归属。
 
 ## 5 数据字典 / notices
 
@@ -147,7 +149,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+附件通知引用file_id，纯文本可留空。revision作为解析与核对的并发标记。
 
 ## 5 数据字典 / drafts
 
@@ -162,7 +164,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：UNIQUE(notice_id,revision)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+每个通知版本对应一条草稿。fields_json记录候选值，evidence_json保存来源定位。
 
 ## 5 数据字典 / affairs
 
@@ -177,7 +179,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+事务状态preparing作为默认。产生持久化变化时更新revision，既有方案用它检测并发修改。
 
 ## 5 数据字典 / affair_notices
 
@@ -189,7 +191,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：PRIMARY KEY(affair_id,notice_id)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+同一对事务和通知只关联一次。写入前核对两端的owner_id一致。
 
 ## 5 数据字典 / events
 
@@ -212,7 +214,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：CHECK((precision='date' AND date_value IS NOT NULL AND due_at IS NULL) OR (precision='minute' AND due_at IS NOT NULL AND date_value IS NULL) OR (precision='unknown' AND due_at IS NULL AND date_value IS NULL)); CHECK(end_at IS NULL OR (start_at IS NOT NULL AND end_at>start_at)); CHECK(kind='activity' OR (start_at IS NULL AND end_at IS NULL))
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+时间精度属于业务事实。date仅存日历日期，minute存精确时刻，unknown不写这两列。起止时刻仅用于活动。
 
 ## 5 数据字典 / checklist_items
 
@@ -226,7 +228,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+done保存材料完成情况，所有权经affair_id追溯。变更计划保留与变化无关的完成记录。
 
 ## 5 数据字典 / plans
 
@@ -242,7 +244,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+写入操作列表与目标版本。登记执行后冻结操作及版本，后续调整使用新的计划标识。
 
 ## 5 数据字典 / confirmations
 
@@ -258,7 +260,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：UNIQUE(plan_id,plan_revision)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+同一计划版本只接受一条确认。消费与步骤登记在同一事务，避免已确认但找不到执行记录。
 
 ## 5 数据字典 / executions
 
@@ -275,7 +277,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+每个操作一条记录。step_key跨重放稳定，结果状态及租约决定能否续跑或重试。
 
 ## 5 数据字典 / reminders
 
@@ -290,7 +292,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+与事项关联。到期后记录产生状态，从read_at判断阅读情况，站内查询须核验事项所属用户。
 
 ## 5 数据字典 / knowledge_documents
 
@@ -311,7 +313,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+status描述发布状态，index_status描述检索索引状态。两者和有效期共同决定资料是否进入检索。
 
 ## 5 数据字典 / knowledge_chunks
 
@@ -326,7 +328,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：UNIQUE(document_id,ordinal)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+以资料版本和ordinal定位稳定分段。locator用于展示原文页码或章节。
 
 ## 5 数据字典 / memory_items
 
@@ -342,7 +344,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+只有用户确认的有效记忆可注入新会话。source_ref保留来源标识，修改按revision校验。
 
 ## 5 数据字典 / changes
 
@@ -357,7 +359,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+记录补充通知及差异，可关联候选计划。比较阶段只写差异记录，正式事项待确认执行。
 
 ## 5 数据字典 / audit_logs
 
@@ -373,7 +375,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：无表级附加约束；以DDL和业务校验为准。
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+保存最小操作摘要。由后台任务触发时actor_id可空，以request_id追踪处理。
 
 ## 5 数据字典 / event_sources
 
@@ -388,7 +390,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：PRIMARY KEY(event_id,draft_id,field_name)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+联合标识由事项、草稿和字段组成。同一正式事项的历次核对可按草稿定位。
 
 ## 5 数据字典 / artifacts
 
@@ -405,7 +407,7 @@ UML（Unified Modeling Language，统一建模语言）；ER（Entity Relationsh
 
 附加约束：UNIQUE(execution_id,file_id)
 
-逻辑删除：通知、记忆和资料先标记状态，检索排除；原件及副本按保留政策清理。中间步骤记录不以删除方式规避审计。
+产物绑定所属用户、事务、执行及实际文件。调用方只能取得通过权限校验的文件下载入口。
 
 ## 6 事务、完整性与并发
 
@@ -462,3 +464,90 @@ ix_events_due用于用户未完成期限查询；ix_reminders_due用于提醒扫
 身份与MiniClaw工作区建立内部映射，会话/消息复用现有持久化并加事务关联适配；本文19表是校园业务目标模型，不代表可以直接导入底座覆盖旧表。整合迁移必须用独立命名空间或适配仓储，先检查现有表结构。
 
 JSON字段保存操作快照而不复制实时任务状态；时间比较统一UTC格式；本轮仅验证DDL、唯一约束、时间约束与外键，跨用户授权和模型效果仍待实现。
+
+## 12 数据域、记录来源与约束边界
+
+| 数据域 | 涉及关系 | 写入来源及约束 |
+|---|---|---|
+| 身份及原件 | users / files / notices / drafts | 用户提交原文，后台追加草稿。原文与人工确认值分别存储 |
+| 事务及办理内容 | affairs / affair_notices / events / checklist_items / reminders | 核对或确认执行后才写正式事项。同一事务内业务目标归属一致 |
+| 计划、追溯及产物 | plans / confirmations / executions / changes / event_sources / artifacts | 计划冻结后按分步结果追溯。文件存在且归属一致后才登记ready |
+| 资料、偏好及审计 | knowledge_documents / knowledge_chunks / memory_items / audit_logs | 资料须审核，长期偏好由用户确认，审计只留必要摘要 |
+
+数据库约束覆盖主外键、唯一性、部分枚举与时间列组合。服务层负责非空业务标识、操作权限、跨表归属、状态转换、有效期和JSON内容。普通SQLite表的文本主键需额外防止空值，当前建表脚本由写入层校验，正式迁移可显式补充NOT NULL。
+
+每个连接初始化后启用foreign_keys，并检查该配置生效。引用存在不能证明属于当前用户，连接查询需按所有权逐层约束。
+
+## 13 核对、差异与执行的事务边界
+
+| 场景 | 短事务中的读写步骤 | 失败与重入 |
+|---|---|---|
+| 确认通知 | 查通知及草稿归属和版本，按目标事务确认同一关联，写事项、字段来源、材料清单及审计 | 版本冲突回退全部写入。同一提交标识的重复请求返回已有事务 |
+| 比较补充通知 | 创建changes及候选计划，保存旧值、新值和目标版本快照 | 已有正式任务继续按原状态展示，比较流程只落差异和候选计划 |
+| 提交执行 | 在BEGIN IMMEDIATE中检查归属和确认绑定，已登记时回原结果。首次提交校验目标版本、消费确认、登记步骤 | 任何一步失败均回滚。相同计划与操作的步骤键唯一 |
+| 工具结果写回 | 核验租约。内部业务更新、版本增加及成功状态同一事务。外部产物校验后登记files及artifacts | 未知外部结果保留待核实状态，避免重复生成或提交 |
+| 通知变更应用 | 只更新变更方案涉及的事项和待触发提醒，更新目标版本并记录结果 | 发现目标版本变化时停止该步并提示重新核对 |
+
+每次写事务在持锁前完成可提前完成的处理。模型推理、网络工具调用和大文件写入均在短事务之外。遇到数据库忙时采用有限重试，重试须沿用合法请求的稳定标识。
+
+首次核对时可在审计动作的request_id和摘要中记录服务端接受的提交标识、草稿版本及目标事务标识。短事务按本人和提交标识回查成功记录，仅在确认同一业务输入时返回既有结果。
+
+## 14 状态迁移与任务恢复
+
+| 对象 | 设计状态与迁移 | 关键约束 |
+|---|---|---|
+| 通知 | pending → ready 或 failed。失败经用户重试回pending | 单解析进程消费pending。以通知版本保护草稿提交 |
+| 计划 | draft → confirmed → submitted。登记后从步骤聚合结果 | 已登记方案保持不可变。修订时新建计划标识 |
+| 执行步骤 | queued → running → succeeded / failed / uncertain。明确失败且安全可重试时回queued | 使用固定步骤键。以领取时租约值做条件更新，旧工作进程不能覆盖新结果 |
+| 提醒 | pending → emitted 或 cancelled | 到期写emitted，阅读只改read_at。已产生提醒保留历史 |
+| 资料与索引 | draft → published → disabled。索引独立pending → ready/failed | 先校验可检索性再排序。停用或索引失败后从新检索排除 |
+| 记忆 | proposed → confirmed → disabled / deleted | 写入由用户确认，停用和删除后从新会话排除 |
+
+上述状态名是服务层设计约定。首期数据库仅对部分枚举设置约束，各状态转换仍由业务服务校验。在没有可信结果时，过期外部步骤进入uncertain，恢复前核对请求标识及文件。
+
+## 15 查询、时间约定与索引验证
+
+按本人范围及状态分页查询通知和事项。列表使用稳定排序，翻页游标由排序值与记录标识共同确定。精确时刻使用固定精度的UTC字符串，日期精度单独保存。created_at使用数据库默认值，展示前解析并按事件时区转化，避免混合格式直接比较。
+
+| 现有索引 | 样例访问谓词 | 本地查询计划 |
+|---|---|---|
+| ix_events_due | owner_id与status相等，按due_at范围过滤 | 使用该索引 |
+| ix_reminders_due | status相等，fire_at早于扫描上限 | 使用该索引 |
+| ix_executions_claim | status相等，lease_until早于租约截止 | 使用该索引 |
+| ix_notices_owner | owner_id与status相等 | 使用该索引 |
+
+使用现有schema.sql在内存SQLite中执行EXPLAIN QUERY PLAN，验证访问谓词与联合索引列顺序匹配。上线前使用接近试点规模的数据检查扫描、临时排序、后台领取吞吐及锁等待，再决定索引调整。
+
+## 16 文件一致性、保留与清理
+
+| 阶段 | 数据操作 | 检查点 |
+|---|---|---|
+| 上传或生成 | 先写暂存并校验大小、类型和摘要，再移动到受控文件区，最后登记文件引用 | 登记失败清理孤立文件，避免入库记录指向不可读文件 |
+| 下载 | 从业务对象校验关联、归属、可见状态，再解析storage_key | 禁止由客户端直接选取存储路径 |
+| 逻辑删除 | 先解除检索与客户端可见性，同步失效缓存 | 检查文件仍否被通知、产物或知识资料引用 |
+| 物理清理 | 在保留周期结束后由任务清理已无引用的正文、索引及副本 | 审计保留必要摘要。备份过期后按对应政策清除 |
+
+若文件持久化与数据库登记之间发生崩溃，用待核实状态与后台对账处理。对账以文件摘要、稳定存储标识和业务关联为准。历史备份的删除与恢复须遵循已确认的保留策略。
+
+## 17 备份、恢复与迁移验收
+
+试点规划恢复点24小时、恢复时间4小时。快照包含数据库、与快照匹配的附件清单和摘要、数据库结构版本。备份时暂停附件删除并保留快照引用的文件，核实清单可恢复后再结束。
+
+恢复演练在隔离环境完成。校验快照和附件摘要，通过integrity_check、foreign_key_check和样例业务读写检查，再重建资料索引。恢复后的队列先停领，盘点已发出但未确认结果的操作。
+
+迁移前锁定目标结构版本和脚本摘要，用脱敏样本演练升级。旧库先备份。若迁移失败，恢复迁移前的数据库及附件清单，并与外部工具核对既有操作，再恢复执行队列。
+
+参考：SQLite外键约束 https://www.sqlite.org/foreignkeys.html 。事务行为 https://www.sqlite.org/lang_transaction.html 。一致性快照 https://www.sqlite.org/backup.html 。建表约束 https://www.sqlite.org/lang_createtable.html 。
+
+## 18 数据层验收与实施待决策
+
+| 用例 | 操作 | 判定条件 |
+|---|---|---|
+| DB-01 初始化 | 执行建表脚本并核对表数和外键配置 | 19张业务表，结构检查通过。本轮已复核 |
+| DB-02 唯一和时间约束 | 插入重复步骤键、反向区间与未知精度的精确时刻 | 数据库拒绝，本轮使用内存样例复核 |
+| DB-03 事务回滚 | 消费确认后模拟登记步骤失败 | 确认、执行和业务数据均回到提交前，由集成测试验证 |
+| DB-04 所属用户 | 新增跨用户附件引用或查询其他人的产物 | 服务拒绝且无有效写入，需集成测试 |
+| DB-05 故障恢复 | 模拟外部操作未知及旧租约回填 | 不重复执行，旧租约无写入权限，需集成测试 |
+| DB-06 快照恢复 | 恢复一致性快照并抽样比对附件 | 记录数、外键与摘要一致，记录实际耗时，需恢复演练 |
+
+实施前需确认资料来源授权、备份保留周期、真实附件规模和试点并发量。由后续集成测试确认状态转换、重试的安全性与MiniClaw数据隔离。
